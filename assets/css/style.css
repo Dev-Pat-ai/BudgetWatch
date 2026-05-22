@@ -1,0 +1,128 @@
+/* Strict 4-Color Palette Implementation */
+:root {
+    --canvas-white: #F8FAFC;
+    --deep-slate: #0F172A;
+    --growth-green: #10B981;
+    --alert-red: #EF4444;
+    --card-shadow: 0 4px 15px rgba(0,0,0,0.03);
+    --border-color: #E2E8F0;
+}
+
+body {
+    background-color: var(--canvas-white);
+    color: var(--deep-slate);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+}
+
+/* Base Typography & Elements */
+h1, h2, h3, h4, h5, h6 { margin: 0 0 10px 0; }
+a { color: var(--deep-slate); text-decoration: none; transition: 0.2s; }
+.text-green { color: var(--growth-green) !important; }
+.text-red { color: var(--alert-red) !important; }
+.bold { font-weight: 700; }
+.w-full { width: 100%; }
+
+/* Buttons */
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    text-align: center;
+    transition: opacity 0.2s, transform 0.1s;
+    background: var(--deep-slate);
+    color: var(--canvas-white);
+}
+.btn:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn-green { background: var(--growth-green); color: white; }
+.btn-red { background: var(--alert-red); color: white; }
+.btn-sm { padding: 6px 12px; font-size: 0.85rem; }
+
+/* Form Elements */
+.form-group { 
+    margin-bottom: 15px; 
+
+}
+.form-group label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 0.9rem; }
+.form-group input, .form-group select {
+    width: 100%; padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px; box-sizing: border-box;
+    font-family: inherit; transition: border 0.2s;
+}
+.form-group input:focus, .form-group select:focus {
+    outline: none; border-color: var(--growth-green);
+}
+
+/* Cards */
+.card {
+    background: #FFFFFF;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: var(--card-shadow);
+    border: 1px solid var(--border-color);
+}
+
+/* Layout: Landing & Auth */
+.landing-hero {
+    background: var(--deep-slate); color: var(--canvas-white);
+    padding: 80px 20px; text-align: center;
+}
+.landing-hero h1 { font-size: 3rem; margin-bottom: 20px; }
+.features-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 30px; max-width: 1000px; margin: -40px auto 40px; padding: 0 20px;
+}
+.auth-wrapper {
+    display: flex; justify-content: center; align-items: center; min-height: 100vh;
+}
+.auth-card { width: 100%; max-width: 400px; }
+
+/* Layout: Dashboard */
+.dashboard-container { display: flex; height: 100vh; overflow: hidden; }
+.sidebar {
+    width: 260px; background: var(--deep-slate); color: var(--canvas-white);
+    padding: 30px 20px; display: flex; flex-direction: column;
+}
+.sidebar-nav { margin-top: 40px; display: flex; flex-direction: column; gap: 10px; }
+.sidebar-nav a {
+    color: #94A3B8; padding: 12px 16px; border-radius: 8px; font-weight: 500;
+}
+.sidebar-nav a:hover, .sidebar-nav a.active {
+    background: rgba(255,255,255,0.05); color: var(--canvas-white);
+}
+.main-content {
+    flex: 1; padding: 30px 40px; overflow-y: auto; background: var(--canvas-white);
+}
+.dash-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;
+}
+.summary-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px;
+}
+.summary-card h3 { font-size: 0.9rem; color: #64748B; margin-bottom: 10px; }
+.summary-card h2 { font-size: 2rem; margin: 0; }
+.dashboard-grid {
+    display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; margin-bottom: 30px;
+}
+
+/* Charts & Tables */
+.chart-container { position: relative; height: 300px; display: flex; align-items: center; justify-content: center;}
+.data-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+.data-table th, .data-table td {
+    padding: 14px 10px; border-bottom: 1px solid var(--border-color); text-align: left;
+}
+.data-table th { font-weight: 600; color: #64748B; font-size: 0.85rem; text-transform: uppercase; }
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .dashboard-container { flex-direction: column; }
+    .sidebar { width: 100%; padding: 15px; height: auto; }
+    .sidebar-nav { margin-top: 10px; flex-direction: row; flex-wrap: wrap; }
+    .dashboard-grid { grid-template-columns: 1fr; }
+}
