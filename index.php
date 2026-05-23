@@ -1,4 +1,3 @@
-<?php require 'includes/header.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,7 +8,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; background: #F0F2F5; color: #0F172A; }
+        body {
+            font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+            background: #F0F2F5;
+            color: #0F172A;
+            display: block;
+            width: 100%;
+            overflow-x: hidden;
+        }
 
         .nav {
             position: fixed; top: 0; left: 0; right: 0; z-index: 100;
@@ -110,6 +116,9 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 20px;
+            max-width: none;
+            margin: 0;
+            padding: 0;
         }
         .feature-card {
             background: #fff; border-radius: 16px;
