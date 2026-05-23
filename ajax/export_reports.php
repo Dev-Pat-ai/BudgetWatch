@@ -2,15 +2,13 @@
 require __DIR__ . '/../includes/db.php';
 require __DIR__ . '/../includes/auth.php';
 requireLogin();
-session_start();
+if (session_status() === PHP_SESSION_NONE) session_start();
 $userId = $_SESSION['user_id'];
 
-// Simple CSV export of transactions for the user
 header('Content-Type: text/csv; charset=utf-8');
 $filename = 'budgetwatch_reports_' . date('Ymd_His') . '.csv';
 header('Content-Disposition: attachment; filename="' . $filename . '"');
 
-// open output stream
 $out = fopen('php://output', 'w');
 fputcsv($out, ['Date', 'Title', 'Category', 'Type', 'Amount']);
 
@@ -24,7 +22,6 @@ try {
         fputcsv($out, [$row['transaction_date'], $row['title'], $row['category'], $row['type'], $row['amount']]);
     }
 } catch (Exception $e) {
-    // On error, write message
     fputcsv($out, ['ERROR', $e->getMessage()]);
 }
 

@@ -12,13 +12,6 @@ $activePage = 'reports';
     <title>BudgetWatch - Analytics</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        /* small overrides for reports layout */
-        .reports-grid { display: grid; grid-template-columns: 1fr 360px; gap: 20px; align-items: start; }
-        .report-card { padding: 18px; background: #fff; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
-        .report-actions { display:flex; gap:8px; align-items:center; }
-        .report-actions .btn { padding:8px 12px; border-radius:6px; cursor:pointer; }
-    </style>
 </head>
 <body>
 <div class="dashboard-container">
@@ -30,9 +23,9 @@ $activePage = 'reports';
                 <p class="page-subtitle">Monthly reports, spending and income analysis.</p>
             </div>
             <div class="report-actions">
-                <button id="exportCsvBtn" class="btn">Export CSV</button>
+                <button id="exportCsvBtn" class="btn btn-green">Export CSV</button>
                 <button id="printBtn" class="btn">Print</button>
-                <button id="downloadPdfBtn" class="btn">Download PDF</button>
+                <button id="downloadPdfBtn" class="btn btn-red">Download PDF</button>
             </div>
         </header>
 
@@ -46,16 +39,43 @@ $activePage = 'reports';
             </p>
         </div>
 
+        <div id="reportNotice" class="card" style="margin-bottom:16px; display:none; color:#EF4444; background:#FEF2F2; border-color:#FEE2E2;">
+            <p style="margin:0;">Unable to load analytics.</p>
+        </div>
+
+        <div class="report-summary" id="summaryCards">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Total Income</h3>
+                </div>
+                <p id="summaryIncome" class="report-metric">Loading...</p>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Total Expense</h3>
+                </div>
+                <p id="summaryExpense" class="report-metric">Loading...</p>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Net Balance</h3>
+                </div>
+                <p id="summaryNet" class="report-metric">Loading...</p>
+            </div>
+        </div>
+
         <div class="reports-grid">
             <div>
                 <div class="report-card" style="margin-bottom:18px;">
                     <h4>Monthly Income & Expenses</h4>
-                    <canvas id="monthlyTrendChart" height="160"></canvas>
+                    <canvas id="monthlyTrendChart" height="200"></canvas>
+                    <div id="monthlyMessage" class="report-metric"></div>
                 </div>
 
                 <div class="report-card" style="margin-bottom:18px;">
                     <h4>Spending by Category</h4>
-                    <canvas id="spendingPieChart" height="200"></canvas>
+                    <canvas id="spendingPieChart" height="220"></canvas>
+                    <div id="pieMessage" class="report-metric"></div>
                 </div>
 
                 <div class="report-card">
