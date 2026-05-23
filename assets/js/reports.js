@@ -60,8 +60,12 @@ function renderMonthlyChart(monthly) {
     if (!ctx) return;
 
     const labels = monthly.map((m) => m.ym);
-    const incomes = monthly.map((m) => Number(m.income || 0));
-    const expenses = monthly.map((m) => Number(m.expense || 0));
+    let incomes = monthly.map((m) => Number(m.income || 0));
+    let expenses = monthly.map((m) => Number(m.expense || 0));
+
+    // sanitize values: convert non-finite to 0 to avoid Chart.js scale issues
+    incomes = incomes.map((v) => (Number.isFinite(v) ? v : 0));
+    expenses = expenses.map((v) => (Number.isFinite(v) ? v : 0));
 
     if (labels.length === 0 || (incomes.every((v) => v === 0) && expenses.every((v) => v === 0))) {
         monthlyChart?.destroy();
@@ -71,6 +75,13 @@ function renderMonthlyChart(monthly) {
 
     if (message) message.textContent = '';
     monthlyChart?.destroy();
+
+    // compute sensible y-axis bounds to avoid charts stretching infinitely
+    const allVals = incomes.concat(expenses);
+    const maxVal = Math.max(...allVals, 0);
+    const minVal = Math.min(...allVals, 0);
+    const padding = Math.max(10, Math.ceil((maxVal - minVal) * 0.1));
+    console.log('Monthly chart data:', { labels, incomes, expenses, minVal, maxVal, padding });
 
     monthlyChart = new Chart(ctx.getContext('2d'), {
         type: 'line',
@@ -111,7 +122,12 @@ function renderMonthlyChart(monthly) {
             scales: {
                 y: {
                     beginAtZero: true,
-                    ticks: { callback: (value) => formatCurrency(value) }
+                    min: 0,
+                    suggestedMax: Math.max(maxVal + padding, 10),
+                    ticks: {
+                        callback: (value) => formatCurrency(value),
+                        maxTicksLimit: 6
+                    }
                 }
             }
         }

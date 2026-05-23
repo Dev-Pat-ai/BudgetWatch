@@ -17,7 +17,23 @@ try {
         ORDER BY ym DESC
         LIMIT 12");
     $stmt->execute(['uid' => $userId]);
-    $monthly = array_reverse($stmt->fetchAll(PDO::FETCH_ASSOC));
+    $rawMonthly = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $monthlyIndex = [];
+    foreach ($rawMonthly as $row) {
+        $monthlyIndex[$row['ym']] = $row;
+    }
+    $monthly = [];
+    $now = new DateTime('first day of this month');
+    for ($i = 11; $i >= 0; $i--) {
+        $month = clone $now;
+        $month->modify("-{$i} months");
+        $ym = $month->format('Y-m');
+        if (isset($monthlyIndex[$ym])) {
+            $monthly[] = $monthlyIndex[$ym];
+        } else {
+            $monthly[] = ['ym' => $ym, 'income' => 0, 'expense' => 0];
+        }
+    }
 
     $stmt = $pdo->prepare("SELECT category, SUM(amount) AS total FROM transactions
         WHERE user_id = :uid AND type='expense'

@@ -2,6 +2,16 @@
 if (!isset($activePage)) {
     $activePage = '';
 }
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+$avatar = $_SESSION['avatar'] ?? null;
+$avatarPath = $avatar ? __DIR__ . '/../assets/images/avatars/' . $avatar : null;
+if ($avatar && !is_file($avatarPath)) {
+    $avatar = null;
+}
+$fullName = $_SESSION['full_name'] ?? '';
+$initial = $fullName ? strtoupper(substr($fullName, 0, 1)) : 'U';
 
 function navClass($page) {
     global $activePage;
@@ -11,10 +21,12 @@ function navClass($page) {
 <aside class="sidebar">
     <div class="sidebar-brand">
         <div class="brand-icon">
-            <?php if (!empty($_SESSION['avatar'])): ?>
-                <img src="assets/images/avatars/<?php echo htmlspecialchars($_SESSION['avatar']); ?>" alt="avatar" style="width:36px;height:36px;border-radius:8px;object-fit:cover;">
+            <?php if (!empty($avatar)): ?>
+                <img src="assets/images/avatars/<?php echo htmlspecialchars($avatar); ?>" alt="avatar" style="width:36px;height:36px;border-radius:8px;object-fit:cover;">
             <?php else: ?>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+                <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:0.95rem;">
+                    <?php echo htmlspecialchars($initial); ?>
+                </div>
             <?php endif; ?>
         </div>
         <span class="brand-name">BudgetWatch</span>
