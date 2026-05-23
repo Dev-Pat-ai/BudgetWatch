@@ -34,7 +34,13 @@ $activePage = 'dashboard';
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
                     <span class="notif-dot"></span>
                 </button>
-                <div class="user-avatar"><?php echo strtoupper(substr($_SESSION['full_name'] ?? 'U', 0, 1)); ?></div>
+                <div class="user-avatar">
+                    <?php if (!empty($_SESSION['avatar'])): ?>
+                        <img src="assets/images/avatars/<?php echo htmlspecialchars($_SESSION['avatar']); ?>" alt="avatar" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">
+                    <?php else: ?>
+                        <?php echo strtoupper(substr($_SESSION['full_name'] ?? 'U', 0, 1)); ?>
+                    <?php endif; ?>
+                </div>
             </div>
         </header>
 
