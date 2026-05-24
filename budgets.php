@@ -25,12 +25,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$budgetStmt = $pdo->prepare("SELECT id, category, budget_limit, month FROM budgets WHERE user_id = ? ORDER BY month DESC, category ASC");
-$budgetStmt->execute([$user_id]);
+$currentMonth = sanitizeInput($_GET['month'] ?? date('Y-m'));
+
+// Only load budgets for the current month to treat them as "active"
+$budgetStmt = $pdo->prepare("SELECT id, category, budget_limit, month FROM budgets WHERE user_id = ? AND month = ? ORDER BY month DESC, category ASC");
+$budgetStmt->execute([$user_id, $currentMonth]);
 $budgets = $budgetStmt->fetchAll(PDO::FETCH_ASSOC);
 
-$spendingStmt = $pdo->prepare("SELECT LOWER(category) as category, SUM(amount) as spent FROM transactions WHERE user_id = ? AND type = 'expense' GROUP BY LOWER(category)");
-$spendingStmt->execute([$user_id]);
+// Compute spending per category for the same month as the budgets
+$spendingStmt = $pdo->prepare("SELECT LOWER(category) as category, SUM(amount) as spent FROM transactions WHERE user_id = ? AND type = 'expense' AND DATE_FORMAT(transaction_date, '%Y-%m') = ? GROUP BY LOWER(category)");
+$spendingStmt->execute([$user_id, $currentMonth]);
 $spentByCategory = [];
 while ($row = $spendingStmt->fetch(PDO::FETCH_ASSOC)) {
     $spentByCategory[$row['category']] = (float)$row['spent'];
@@ -71,11 +75,11 @@ $remainingBudget = $totalBudget - $totalSpent;
 
         <div class="stats-grid">
             <div class="stat-card">
-                <p class="stat-label">Total Budget</p>
+                <p class="stat-label">Active Budget Total</p>
                 <h2 class="stat-value"><?php echo '₱' . number_format($totalBudget, 2); ?></h2>
             </div>
             <div class="stat-card stat-card--expense">
-                <p class="stat-label">Total Spent</p>
+                <p class="stat-label">Budget Used</p>
                 <h2 class="stat-value expense-val"><?php echo '₱' . number_format($totalSpent, 2); ?></h2>
             </div>
             <div class="stat-card stat-card--income">
@@ -83,7 +87,7 @@ $remainingBudget = $totalBudget - $totalSpent;
                 <h2 class="stat-value income-val"><?php echo '₱' . number_format(max($remainingBudget, 0), 2); ?></h2>
             </div>
             <div class="stat-card stat-card--alert">
-                <p class="stat-label">Categories Tracked</p>
+                <p class="stat-label">Active Budget Categories</p>
                 <h2 class="stat-value"><?php echo count($budgets); ?></h2>
             </div>
         </div>
@@ -91,14 +95,26 @@ $remainingBudget = $totalBudget - $totalSpent;
         <div class="content-grid">
             <div class="left-col">
                 <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">Active Budgets</h3>
-                        <span class="tag">Your tracking setup</span>
+                    <div class="card-header" style="align-items:center; gap:12px;">
+                        <div>
+                            <h3 class="card-title">Active Budgets</h3>
+                            <span class="tag">Your tracking setup</span>
+                        </div>
+                        <div style="margin-left:auto; display:flex; align-items:center; gap:8px;">
+                            <div class="month-control">
+                                <label class="month-label">Showing month</label>
+                                <div class="month-picker">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                                    <input id="view-month-select" class="month-input" type="month" value="<?php echo htmlspecialchars($currentMonth); ?>">
+                                </div>
+                            </div>
+                        </div>
                     </div>
+                    <div class="card-body" style="padding-top:12px;">
                     <?php if (empty($budgets)): ?>
-                        <p style="color:#64748B; margin-top: 16px;">No budgets defined yet. Add one to get started.</p>
+                        <div style="color:#64748B; padding:28px 12px; text-align:center;">No budgets defined yet. Add one to get started.</div>
                     <?php else: ?>
-                        <div class="budget-list" style="margin-top: 16px;">
+                        <div class="budget-list" style="margin-top: 8px;">
                             <?php foreach ($budgets as $budget):
                                 $key = strtolower($budget['category']);
                                 $spent = $spentByCategory[$key] ?? 0;
@@ -109,6 +125,7 @@ $remainingBudget = $totalBudget - $totalSpent;
                                     <div class="budget-meta">
                                         <span class="budget-name"><?php echo htmlspecialchars($budget['category']); ?> — <?php echo htmlspecialchars($budget['month']); ?></span>
                                         <span class="budget-pct<?php echo $barClass === 'progress-over' ? ' pct-over' : ($barClass === 'progress-warn' ? ' pct-warn' : ''); ?>"><?php echo round($percentage); ?>%</span>
+                                        <button class="btn-delete" onclick="deleteBudget(<?php echo (int)$budget['id']; ?>)" title="Delete budget" style="margin-left:12px;">×</button>
                                     </div>
                                     <div class="progress-bar"><div class="progress-fill <?php echo $barClass; ?>" style="width: <?php echo $percentage; ?>%"></div></div>
                                     <p style="margin-top:10px;color:#64748B;font-size:0.88rem;">Spent ₱<?php echo number_format($spent,2); ?> of ₱<?php echo number_format($budget['budget_limit'],2); ?></p>
@@ -116,6 +133,7 @@ $remainingBudget = $totalBudget - $totalSpent;
                             <?php endforeach; ?>
                         </div>
                     <?php endif; ?>
+                    </div>
                 </div>
             </div>
             <div class="right-col">

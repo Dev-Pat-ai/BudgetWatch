@@ -6,7 +6,12 @@ require 'includes/auth.php';
 if (isLoggedIn()) { header("Location: dashboard.php"); exit; }
 
 $error = '';
-$success = isset($_GET['registered']) ? "Registration successful! Please login." : "";
+$success = '';
+if (isset($_GET['registered'])) {
+    $success = 'Registration successful! Please login.';
+} elseif (isset($_GET['reset'])) {
+    $success = 'Your password has been reset successfully. Please log in.';
+}
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $email = sanitizeInput($_POST['email']);
@@ -80,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div style="margin-bottom:24px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
                     <label style="font-size:0.8rem;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.04em;">Password</label>
-                    <a href="#" style="font-size:0.8rem;color:#10B981;font-weight:600;text-decoration:none;">Forgot password?</a>
+                    <a href="forgot_password.php" style="font-size:0.8rem;color:#10B981;font-weight:600;text-decoration:none;">Forgot password?</a>
                 </div>
                 <input type="password" name="password" required placeholder="••••••••"
                     style="width:100%;padding:11px 14px;border:1px solid #E2E8F0;border-radius:8px;font-family:inherit;font-size:0.9rem;color:#0F172A;background:#F8FAFC;box-sizing:border-box;transition:border 0.2s,box-shadow 0.2s;"

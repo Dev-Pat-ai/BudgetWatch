@@ -21,7 +21,7 @@
 }
 
 body {
-    font-family: 'Plus Jakarta Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-family: 'Segoe UI';
     background: var(--bg-page);
     color: var(--text-primary);
     min-height: 100vh;
@@ -176,6 +176,52 @@ body {
     border: 2px solid #fff;
 }
 
+/* Notification dropdown */
+.notif-wrapper { position: relative; }
+.notif-dropdown {
+    position: absolute;
+    right: 0;
+    top: 46px;
+    width: 320px;
+    background: #fff;
+    border: 1px solid #E6EEF5;
+    box-shadow: var(--shadow-md);
+    border-radius: 10px;
+    overflow: hidden;
+    z-index: 600;
+}
+.notif-header { padding: 10px 14px; font-weight:700; color:var(--text-primary); border-bottom:1px solid #F1F5F9; }
+.notif-list { max-height: 260px; overflow:auto; padding: 8px; }
+.notif-item { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 10px; border-radius:6px; }
+.notif-item + .notif-item { margin-top:6px; }
+.notif-meta { flex:1; }
+.notif-title { font-weight:600; color:var(--text-primary); }
+.notif-sub { font-size:0.85rem; color:var(--text-light); }
+.notif-amt { font-weight:700; margin-left:8px; white-space:nowrap; }
+.notif-income { color:var(--accent-green); }
+.notif-expense { color:var(--accent-red); }
+.notif-footer { display:block; padding:10px 14px; text-align:center; border-top:1px solid #F1F5F9; text-decoration:none; color:var(--accent-green); font-weight:700; }
+.notif-empty { color:var(--text-light); padding:12px; text-align:center; }
+
+/* Responsive: make notification dropdown full-width on small screens */
+@media (max-width: 680px) {
+    .notif-dropdown {
+        position: fixed;
+        left: 10px;
+        right: 10px;
+        top: 70px;
+        width: auto;
+        max-height: calc(100vh - 120px);
+        border-radius: 12px;
+    }
+
+    .icon-btn { width:44px; height:44px; }
+    .notif-dot { top: 8px; right: 8px; }
+}
+
+/* When dropdown is open prevent background scroll */
+.notif-open-body { overflow: hidden; }
+
 .user-avatar {
     width: 40px; height: 40px;
     background: linear-gradient(135deg, #10B981, #059669);
@@ -326,6 +372,34 @@ body {
 .table tbody tr:hover { background: #F8FAFC; }
 .caption-small { color: var(--text-light); font-size: 0.85rem; margin-top: 6px; }
 
+/* Transactions table visual polish */
+.report-card .table {
+    border: 1px solid #E6EEF5;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+}
+.report-card .table thead {
+    background: #FBFDFF;
+}
+.report-card .table th,
+.report-card .table td {
+    padding: 14px 18px;
+    border-bottom: 1px solid #F1F5F9;
+}
+.report-card .table th {
+    font-weight: 700;
+    color: #94A3B8;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+}
+.report-card .table tbody tr:nth-child(even) {
+    background: #FAFCFE;
+}
+.report-card .table tbody tr:last-child td { border-bottom: none; }
+.report-card .table td { color: var(--text-primary); }
+.report-card .table td.text-right, .report-card .table td.text-right { text-align: right; }
+
 @media (max-width: 980px) {
     .reports-grid { grid-template-columns: 1fr; }
     .report-summary { grid-template-columns: repeat(2, minmax(0,1fr)); }
@@ -357,6 +431,14 @@ body {
     padding: 4px 10px;
     border-radius: 20px;
 }
+
+/* Month picker styling used on budgets page */
+.month-control { display:flex; flex-direction:column; align-items:flex-end; }
+.month-label { font-size:0.78rem; color:var(--text-light); margin-bottom:6px; }
+.month-picker { display:flex; align-items:center; gap:8px; background:#F8FAFC; padding:6px 10px; border-radius:10px; border:1px solid var(--border); }
+.month-picker .icon-calendar { width:18px; height:18px; color:var(--text-muted); flex-shrink:0; }
+.month-input { border:none; background:transparent; padding:4px 6px; font-weight:700; color:var(--text-primary); font-size:0.92rem; }
+.month-input::-webkit-calendar-picker-indicator { filter: invert(0.6); opacity:0.9; }
 
 .link-sm {
     font-size: 0.8rem;
@@ -453,6 +535,13 @@ body {
     font-size: 0.875rem;
     font-weight: 600;
     color: var(--text-primary);
+}
+
+.budget-sub {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
 }
 
 .budget-pct {

@@ -3,6 +3,19 @@ require 'includes/db.php';
 require 'includes/auth.php';
 requireLogin();
 $activePage = 'dashboard';
+$user_id = $_SESSION['user_id'];
+$currentMonth = date('Y-m');
+
+$budgetStmt = $pdo->prepare("SELECT id, category, budget_limit, month FROM budgets WHERE user_id = ? AND month = ? ORDER BY category ASC");
+$budgetStmt->execute([$user_id, $currentMonth]);
+$budgets = $budgetStmt->fetchAll(PDO::FETCH_ASSOC);
+
+$spendingStmt = $pdo->prepare("SELECT LOWER(category) as category, SUM(amount) as spent FROM transactions WHERE user_id = ? AND type = 'expense' AND DATE_FORMAT(transaction_date, '%Y-%m') = ? GROUP BY LOWER(category)");
+$spendingStmt->execute([$user_id, $currentMonth]);
+$spentByCategory = [];
+while ($row = $spendingStmt->fetch(PDO::FETCH_ASSOC)) {
+    $spentByCategory[$row['category']] = (float)$row['spent'];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -30,17 +43,24 @@ $activePage = 'dashboard';
                 <p class="page-subtitle" id="current-month-label">Loading...</p>
             </div>
             <div class="topbar-right">
-                <button class="icon-btn" title="Notifications">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-                    <span class="notif-dot"></span>
-                </button>
-                <div class="user-avatar">
+                <div class="notif-wrapper">
+                    <button id="notifBtn" class="icon-btn" title="Notifications" aria-haspopup="true" aria-expanded="false">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                        <span id="notifDot" class="notif-dot" style="display:none;"></span>
+                    </button>
+                    <div id="notifDropdown" class="notif-dropdown" style="display:none;">
+                        <div class="notif-header">Notifications</div>
+                        <div id="notifList" class="notif-list">Loading...</div>
+                        <a href="dashboard.php" class="notif-footer">View all</a>
+                    </div>
+                </div>
+                <a href="profile.php" class="user-avatar" title="Go to Profile">
                     <?php if (!empty($_SESSION['avatar'])): ?>
                         <img src="assets/images/avatars/<?php echo htmlspecialchars($_SESSION['avatar']); ?>" alt="avatar" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">
                     <?php else: ?>
                         <?php echo strtoupper(substr($_SESSION['full_name'] ?? 'U', 0, 1)); ?>
                     <?php endif; ?>
-                </div>
+                </a>
             </div>
         </header>
 
@@ -61,8 +81,8 @@ $activePage = 'dashboard';
                 <span class="stat-badge badge-down">▼ This Month</span>
             </div>
             <div class="stat-card stat-card--alert">
-                <p class="stat-label">Budget Alerts</p>
-                <h2 class="stat-value" id="budget-alert-count">0</h2>
+                <p class="stat-label">Budget Remaining</p>
+                <h2 class="stat-value" id="budget-remaining">₱0.00</h2>
                 <span class="stat-badge badge-warn" id="budget-alert-label">On Track</span>
             </div>
         </div>
@@ -130,36 +150,62 @@ $activePage = 'dashboard';
                         <h3 class="card-title">Remaining Budgets</h3>
                         <a href="budgets.php" class="link-sm">Manage →</a>
                     </div>
-                    <div class="budget-list" id="budget-list">
-                        <div class="budget-item">
-                            <div class="budget-meta">
-                                <span class="budget-name">Groceries</span>
-                                <span class="budget-pct">65%</span>
+                    <?php if (empty($budgets)): ?>
+                        <p style="color:#64748B; margin-top: 16px;">No budgets set for <?php echo date('F Y'); ?>. Add a budget in the Budgets page to track your spending.</p>
+                    <?php else: ?>
+                        <?php
+                            $totalRemaining = 0;
+                            $overspentCount = 0;
+                            foreach ($budgets as $budget) {
+                                $key = strtolower($budget['category']);
+                                $spent = $spentByCategory[$key] ?? 0;
+                                $remaining = $budget['budget_limit'] - $spent;
+                                if ($remaining < 0) {
+                                    $overspentCount++;
+                                }
+                                $totalRemaining += $remaining;
+                            }
+                        ?>
+                        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;">
+                            <div style="flex:1 1 180px; background:#F8FAFC; border:1px solid #E2E8F0; padding:14px 16px; border-radius:12px;">
+                                <p style="margin:0;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#64748B;">Total remaining</p>
+                                <h3 style="margin:8px 0 0; color:#0F172A;">₱<?php echo number_format(max($totalRemaining, 0), 2); ?></h3>
                             </div>
-                            <div class="progress-bar"><div class="progress-fill progress-ok" style="width: 65%"></div></div>
-                        </div>
-                        <div class="budget-item">
-                            <div class="budget-meta">
-                                <span class="budget-name">Dining Out</span>
-                                <span class="budget-pct pct-over">110%</span>
+                            <div style="flex:1 1 180px; background:#F8FAFC; border:1px solid #E2E8F0; padding:14px 16px; border-radius:12px;">
+                                <p style="margin:0;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#64748B;">Overspent categories</p>
+                                <h3 style="margin:8px 0 0; color:<?php echo $overspentCount > 0 ? '#EF4444' : '#10B981'; ?>;"><?php echo $overspentCount; ?></h3>
                             </div>
-                            <div class="progress-bar"><div class="progress-fill progress-over" style="width: 100%"></div></div>
                         </div>
-                        <div class="budget-item">
-                            <div class="budget-meta">
-                                <span class="budget-name">Transportation</span>
-                                <span class="budget-pct">42%</span>
-                            </div>
-                            <div class="progress-bar"><div class="progress-fill progress-ok" style="width: 42%"></div></div>
+                        <div class="budget-list">
+                            <?php foreach ($budgets as $budget):
+                                $key = strtolower($budget['category']);
+                                $spent = $spentByCategory[$key] ?? 0;
+                                $remaining = $budget['budget_limit'] - $spent;
+                                $percentage = $budget['budget_limit'] > 0 ? ($spent / $budget['budget_limit']) * 100 : 0;
+                                $width = min(100, max(0, $percentage));
+                                if ($percentage > 100) {
+                                    $barClass = 'progress-over';
+                                } elseif ($percentage > 80) {
+                                    $barClass = 'progress-warn';
+                                } else {
+                                    $barClass = 'progress-ok';
+                                }
+                                $statusText = $remaining >= 0 ? '₱' . number_format($remaining, 2) . ' left' : 'Over by ₱' . number_format(abs($remaining), 2);
+                                $valueClass = $remaining >= 0 ? '' : 'pct-over';
+                            ?>
+                                <div class="budget-item">
+                                    <div class="budget-meta">
+                                        <div>
+                                            <span class="budget-name"><?php echo htmlspecialchars($budget['category']); ?> </span>
+                                            <span class="budget-sub"><?php echo htmlspecialchars($budget['month']); ?> • <?php echo $statusText; ?></span>
+                                        </div>
+                                        <span class="budget-pct <?php echo $valueClass; ?>"><?php echo round(min(100, max(0, $percentage))); ?>%</span>
+                                    </div>
+                                    <div class="progress-bar"><div class="progress-fill <?php echo $barClass; ?>" style="width: <?php echo $width; ?>%"></div></div>
+                                </div>
+                            <?php endforeach; ?>
                         </div>
-                        <div class="budget-item">
-                            <div class="budget-meta">
-                                <span class="budget-name">Utilities</span>
-                                <span class="budget-pct pct-warn">88%</span>
-                            </div>
-                            <div class="progress-bar"><div class="progress-fill progress-warn" style="width: 88%"></div></div>
-                        </div>
-                    </div>
+                    <?php endif; ?>
                 </div>
             </div>
 

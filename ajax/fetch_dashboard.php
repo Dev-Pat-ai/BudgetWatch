@@ -29,6 +29,31 @@ try {
     }
     
     $balance = $income - $expenses;
+    $currentMonth = date('Y-m');
+
+    $budgetStmt = $pdo->prepare("SELECT category, budget_limit FROM budgets WHERE user_id = ? AND month = ?");
+    $budgetStmt->execute([$user_id, $currentMonth]);
+    $budgets = $budgetStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $spendingStmt = $pdo->prepare("SELECT LOWER(category) as category, SUM(amount) as spent FROM transactions WHERE user_id = ? AND type = 'expense' AND DATE_FORMAT(transaction_date, '%Y-%m') = ? GROUP BY LOWER(category)");
+    $spendingStmt->execute([$user_id, $currentMonth]);
+
+    $spentByCategory = [];
+    while ($row = $spendingStmt->fetch(PDO::FETCH_ASSOC)) {
+        $spentByCategory[$row['category']] = (float)$row['spent'];
+    }
+
+    $budgetRemaining = 0;
+    $budgetAlerts = 0;
+    foreach ($budgets as $budget) {
+        $key = strtolower($budget['category']);
+        $spent = $spentByCategory[$key] ?? 0;
+        $remaining = (float)$budget['budget_limit'] - $spent;
+        if ($remaining < 0) {
+            $budgetAlerts++;
+        }
+        $budgetRemaining += max(0, $remaining);
+    }
 
     // 2. Fetch Latest 10 Transactions
     $stmt = $pdo->prepare("SELECT id, title, amount, category, type, transaction_date 
@@ -43,6 +68,8 @@ try {
         'balance' => $balance,
         'income' => $income,
         'expenses' => $expenses,
+        'budgetRemaining' => $budgetRemaining,
+        'budgetAlerts' => $budgetAlerts,
         'recent' => $recent
     ]);
 

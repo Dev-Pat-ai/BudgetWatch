@@ -47,6 +47,37 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// Budget page helpers
+document.addEventListener('DOMContentLoaded', () => {
+    const viewMonth = document.getElementById('view-month-select');
+    if (viewMonth) {
+        viewMonth.addEventListener('change', function () {
+            const val = this.value;
+            if (!val) return;
+            const params = new URLSearchParams(window.location.search);
+            params.set('month', val);
+            window.location.search = params.toString();
+        });
+    }
+});
+
+function deleteBudget(id) {
+    if (!confirm('Delete this budget?')) return;
+    const fd = new FormData();
+    fd.append('id', id);
+
+    fetch('ajax/delete_budget.php', { method: 'POST', body: fd })
+        .then((response) => response.json())
+        .then((data) => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert('Error deleting budget: ' + (data.error || 'Unknown'));
+            }
+        })
+        .catch((err) => console.error('Error deleting budget:', err));
+}
+
 function setMonthLabel() {
     const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     const now = new Date();
@@ -66,14 +97,15 @@ function fetchDashboardData() {
             document.getElementById('total-income').textContent = formatCurrency(data.income);
             document.getElementById('total-expense').textContent = formatCurrency(data.expenses);
 
-            const alerts = data.recent.filter((t) => t.type === 'expense').length > 5 ? 3 : 0;
-            const alertCount = document.getElementById('budget-alert-count');
+            const budgetRemaining = data.budgetRemaining ?? 0;
+            const alerts = data.budgetAlerts ?? 0;
+            const remainingElem = document.getElementById('budget-remaining');
             const alertLabel = document.getElementById('budget-alert-label');
-            if (alertCount) {
-                alertCount.textContent = alerts;
+            if (remainingElem) {
+                remainingElem.textContent = formatCurrency(budgetRemaining);
             }
             if (alertLabel) {
-                alertLabel.textContent = alerts > 0 ? alerts + ' Overspending' : 'On Track';
+                alertLabel.textContent = alerts > 0 ? alerts + ' over budget' : 'On Track';
                 alertLabel.className = 'stat-badge ' + (alerts > 0 ? 'badge-over' : 'badge-up');
             }
 
@@ -218,3 +250,98 @@ function deleteTransaction(id) {
 function formatCurrency(amount) {
     return '₱' + parseFloat(amount).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
 }
+
+function escapeHtml(str) {
+    if (typeof str !== 'string') return '';
+    return str.replace(/[&<>'"]/g, (tag) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        "'": '&#39;',
+        '"': '&quot;'
+    }[tag]));
+}
+
+// --- Notifications (recent transactions) ---
+function fetchNotifications() {
+    fetch('ajax/fetch_notifications.php')
+        .then((res) => res.json())
+        .then((data) => {
+            if (data.error) throw new Error(data.error);
+            renderNotifications(data);
+        })
+        .catch((err) => console.error('Notifications error:', err));
+}
+
+function renderNotifications(data) {
+    const dot = document.getElementById('notifDot');
+    const list = document.getElementById('notifList');
+    if (!list || !dot) return;
+
+    if (data.unread && data.unread > 0) {
+        dot.style.display = 'inline-block';
+    } else {
+        dot.style.display = 'none';
+    }
+
+    if (!data.items || data.items.length === 0) {
+        list.innerHTML = '<div class="notif-empty">No recent activity.</div>';
+        return;
+    }
+
+    list.innerHTML = data.items.map((it) => `
+        <div class="notif-item">
+            <div class="notif-meta">
+                <div class="notif-title">${escapeHtml(it.title)}</div>
+                <div class="notif-sub">${escapeHtml(it.category || 'Uncategorized')} · ${it.transaction_date}</div>
+            </div>
+            <div class="notif-amt ${it.type === 'income' ? 'notif-income' : 'notif-expense'}">${it.type === 'income' ? '+' : '-'}${formatCurrency(it.amount)}</div>
+        </div>
+    `).join('');
+}
+
+document.addEventListener('click', (e) => {
+    const btn = document.getElementById('notifBtn');
+    const dropdown = document.getElementById('notifDropdown');
+    if (!btn || !dropdown) return;
+
+    const isInsideBtn = btn.contains(e.target);
+    const isInsideDropdown = dropdown.contains(e.target);
+
+    if (isInsideBtn) {
+        const open = dropdown.style.display === 'block';
+        dropdown.style.display = open ? 'none' : 'block';
+        btn.setAttribute('aria-expanded', (!open).toString());
+        document.body.classList.toggle('notif-open-body', !open);
+        if (!open) {
+            // when opened, hide dot (mark read locally)
+            const dot = document.getElementById('notifDot');
+            if (dot) dot.style.display = 'none';
+        }
+    } else if (!isInsideDropdown) {
+        dropdown.style.display = 'none';
+        btn.setAttribute('aria-expanded', 'false');
+        document.body.classList.remove('notif-open-body');
+    }
+});
+
+// close dropdown on Escape
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        const btn = document.getElementById('notifBtn');
+        const dropdown = document.getElementById('notifDropdown');
+        if (dropdown && dropdown.style.display === 'block') {
+            dropdown.style.display = 'none';
+            if (btn) btn.setAttribute('aria-expanded', 'false');
+            document.body.classList.remove('notif-open-body');
+        }
+    }
+});
+
+// start polling notifications on pages with the button
+document.addEventListener('DOMContentLoaded', () => {
+    if (document.getElementById('notifBtn')) {
+        fetchNotifications();
+        setInterval(fetchNotifications, 60000); // poll every minute
+    }
+});

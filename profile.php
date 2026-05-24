@@ -19,6 +19,10 @@ $userStmt->execute([$user_id]);
 $user = $userStmt->fetch(PDO::FETCH_ASSOC);
 if (!$hasAvatar) $user['avatar'] = null;
 
+if (empty($_SESSION['avatar']) && !empty($user['avatar'])) {
+    $_SESSION['avatar'] = $user['avatar'];
+}
+
 // Ensure avatar column exists (best-effort)
 try {
     $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar VARCHAR(255) DEFAULT NULL");
